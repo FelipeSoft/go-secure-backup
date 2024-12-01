@@ -1,9 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"net/http"
 )
 
 func main() {
-	fmt.Println("HTTP Server is running on port XXXX")
+	r := http.NewServeMux()
+	
+	err := http.ListenAndServe("127.0.0.1:2006", r)
+	if err != nil {
+		log.Fatalf("Error: %s", err)
+	}
 }
