@@ -1,8 +1,9 @@
-package storage 
+package storage
 
-type AmazonS3 struct {}
+import "github.com/FelipeSoft/go-secure-backup/internal/agent/entity"
 
-func (s *AmazonS3) PutFile(byte *[]byte) {
-	
+type AmazonS3 struct{}
+
+func (s *AmazonS3) PutFile(content []*entity.Content) {
+
 }
-

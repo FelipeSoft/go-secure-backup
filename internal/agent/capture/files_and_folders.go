@@ -1,23 +1,50 @@
 package capture
 
 import (
-	"os"
+	"encoding/json"
 	"fmt"
-	"runtime"
 	"log"
+	"net/http"
+	"os"
+	"runtime"
+
+	"github.com/FelipeSoft/go-secure-backup/internal/agent/entity"
 	"github.com/FelipeSoft/go-secure-backup/internal/agent/platform"
 )
 
-func CaptureFilesAndFolders() {
+type CaptureFilesAndFolders struct {
+	storage entity.Storage
+}
+
+type BackupDTO struct {
+	Id     string `json:"id"`
+	Path   string `json:"path"`
+	UserId string `json:"userId"`
+}
+
+func NewCaptureFilesAndFolders(storage entity.Storage) *CaptureFilesAndFolders {
+	return &CaptureFilesAndFolders{
+		storage: storage,
+	}
+}
+
+func (s *CaptureFilesAndFolders) Execute() {
 	operationalSystem := runtime.GOOS
-	path := "C:/Users/felip/OneDrive/Área de Trabalho"
-	content := platform.PlatformFactory(operationalSystem).GetContentFromPath(path)
-	for c := 0; c < len(content); c++ {
-		fmt.Println(content[c])
-	}
-	file, err := os.OpenFile("C:/Users/felip/OneDrive/Área de Trabalho/its_ok.txt", os.O_RDWR|os.O_CREATE, 0644)
+	currentUserId := os.Getenv("USER_ID")
+	res, err := http.Get(fmt.Sprintf("http://localhost:4816/backup/find/%s", currentUserId))
 	if err != nil {
-		log.Fatalf("error on logging: %s", err.Error())
+		log.Fatalf("HTTP Request failed: %s", err.Error())
 	}
-	file.Write([]byte("Hello World!"))
+
+	var bkpRes BackupDTO
+	err = json.NewDecoder(res.Body).Decode(&bkpRes)
+
+	if err != nil {
+		log.Fatalf("Decode Error: %s", err.Error())
+	}
+
+	content := platform.PlatformFactory(operationalSystem).GetContentFromPath(bkpRes.Path)
+	for c := 0; c < len(content); c++ {
+		s.storage.PutFile(content[c])
+	}
 }
